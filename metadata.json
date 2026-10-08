@@ -1,0 +1,6 @@
+{
+  "name": "CSHUNTER",
+  "description": "Professional tool orchestration and pipeline automation platform with built-in log management, session reporting and sequence library.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["Workflow Orchestration", "Pipeline Library", "Automated Logging", "Session Reporting"]
+}

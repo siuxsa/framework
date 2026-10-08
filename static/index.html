@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CSHUNTER — Advanced Operations Center</title>
+  <meta name="description" content="CSHUNTER Bug Bounty Orchestration Console — Pipeline designer, virtual host explorer and real-time terminal." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" />
+  <link rel="stylesheet" href="/static/css/variables.css?v=csh16" />
+  <link rel="stylesheet" href="/static/css/components.css?v=csh16" />
+  <link rel="stylesheet" href="/static/css/layout.css?v=csh16" />
+</head>
+<body>
+
+
+<!-- ═══════════════ SETTINGS MODAL ═══════════════ -->
+<div id="settings-modal" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);align-items:center;justify-content:center;" onclick="if(event.target===this)closeSettings()">
+  <div style="width:400px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,.5);">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+      <div style="font-size:15px;font-weight:800;color:#fff;">Settings</div>
+      <button onclick="closeSettings()" style="color:var(--slate-5);font-size:18px;padding:4px;">&times;</button>
+    </div>
+    <form onsubmit="handleChangeCredentials(event)">
+      <div style="margin-bottom:14px;">
+        <label style="font-size:10px;font-weight:700;color:var(--slate-5);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px;">Current Password</label>
+        <input id="settings-current-pw" type="password" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;outline:none;" />
+      </div>
+      <div style="margin-bottom:14px;">
+        <label style="font-size:10px;font-weight:700;color:var(--slate-5);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px;">New Username <span style="color:var(--slate-7);font-weight:400;">(leave blank to keep)</span></label>
+        <input id="settings-new-user" type="text" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;outline:none;" />
+      </div>
+      <div style="margin-bottom:18px;">
+        <label style="font-size:10px;font-weight:700;color:var(--slate-5);text-transform:uppercase;letter-spacing:.1em;display:block;margin-bottom:6px;">New Password <span style="color:var(--slate-7);font-weight:400;">(leave blank to keep)</span></label>
+        <input id="settings-new-pw" type="password" style="width:100%;padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:#fff;font-size:12px;font-family:'Inter',sans-serif;outline:none;" />
+      </div>
+      <div id="settings-error" style="font-size:11px;color:var(--red);margin-bottom:8px;min-height:16px;"></div>
+      <div id="settings-success" style="font-size:11px;color:var(--emerald);margin-bottom:8px;min-height:16px;"></div>
+      <div style="display:flex;gap:10px;">
+        <button type="submit" class="btn-primary" style="flex:1;padding:9px;font-size:12px;">Save Changes</button>
+        <button type="button" class="btn-ghost" onclick="closeSettings()" style="padding:9px 16px;font-size:12px;border:1px solid var(--border);">Cancel</button>
+      </div>
+    </form>
+
+    <!-- ── Maintenance ──────────────────────────────────── -->
+    <div style="margin-top:26px;padding-top:20px;border-top:1px solid var(--border);">
+      <div style="font-size:10px;font-weight:800;color:var(--slate-5);text-transform:uppercase;letter-spacing:.14em;margin-bottom:4px;">Maintenance</div>
+      <p style="font-size:11px;color:var(--slate-6);line-height:1.5;margin-bottom:14px;">Clear cache removes generated logs &amp; run outputs but keeps your tools and pipes. Fresh start wipes everything and restores defaults.</p>
+
+      <div id="maint-msg" style="font-size:11px;color:var(--emerald);min-height:16px;margin-bottom:8px;"></div>
+
+      <button type="button" onclick="clearCacheData()"
+        style="width:100%;padding:9px;margin-bottom:10px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+               border-radius:8px;border:1px solid var(--border2);background:rgba(255,255,255,.04);color:var(--slate-3);
+               display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s;"
+        onmouseover="this.style.background='rgba(255,255,255,.08)'" onmouseout="this.style.background='rgba(255,255,255,.04)'">
+        <svg class="icon" width="13" height="13" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2"/></svg>
+        Clear Cache &amp; Database
+      </button>
+
+      <button type="button" onclick="freshStart()"
+        style="width:100%;padding:9px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+               border-radius:8px;border:1px solid rgba(239,68,68,.35);background:rgba(239,68,68,.1);color:var(--red);
+               display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s;"
+        onmouseover="this.style.background='rgba(239,68,68,.18)'" onmouseout="this.style.background='rgba(239,68,68,.1)'">
+        <svg class="icon" width="13" height="13" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><line x1="3" y1="3" x2="3" y2="8"/><line x1="3" y1="8" x2="8" y2="8"/></svg>
+        Reset — Fresh Start
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="app">
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header>
+    <div style="display:flex;align-items:center;gap:20px;">
+      <div class="logo-wrap">
+        <div class="logo-icon">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div>
+          <div class="logo-title">CS<span>HUNTER</span> <span class="badge" style="background:rgba(255,106,42,.15);color:#ff6a2a;border:1px solid rgba(255,106,42,.3);">Console v2.0</span></div>
+          <div class="logo-sub">Advanced Operations Center</div>
+        </div>
+      </div>
+
+      <div class="tab-bar" id="main-tabs">
+        <button class="tab-btn active" data-tab="canvas" onclick="switchTab('canvas')">Pipeline Designer</button>
+        <button class="tab-btn" data-tab="explorer" onclick="switchTab('explorer')">
+          <svg class="icon" width="11" height="11" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          Virtual Host Explorer
+        </button>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button class="status-chip" style="border:1px solid rgba(255,106,42,.3);background:rgba(255,106,42,.08);color:var(--cyan);" onclick="showPipeModal()">
+        <svg class="icon" width="11" height="11" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Library
+      </button>
+
+      <button class="status-chip" style="border:1px solid rgba(255,106,42,.3);background:rgba(255,106,42,.08);color:var(--cyan);" onclick="exportSessionReport()" title="Export the current pipeline's commands and outputs as a Markdown report">
+        <svg class="icon" width="11" height="11" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export Report
+      </button>
+
+      <button id="terminate-all-btn" class="status-chip" style="border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.1);color:var(--red);" onclick="stopAllTools()" disabled>
+        <svg class="icon" width="11" height="11" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        Terminate All
+      </button>
+
+      <button class="status-chip" id="system-status-chip" onclick="showStatusModal()" title="Open live system status" style="border:1px solid rgba(255,106,42,.2);background:rgba(255,106,42,.08);cursor:pointer;">
+        <div class="status-dot pulse" id="system-status-dot" style="background:var(--emerald);"></div>
+        <span id="system-status-text" style="font-size:10px;font-weight:700;color:var(--emerald);text-transform:uppercase;letter-spacing:.06em;">System Nominal</span>
+      </button>
+
+      <button onclick="showMissionModal()" style="position:relative;padding:7px;border-radius:8px;color:var(--slate-4);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background=''">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+        <span style="position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:var(--cyan);border-radius:50%;animation:pulse 1.5s infinite;"></span>
+      </button>
+
+      <button onclick="showSettings()" style="padding:7px;border-radius:8px;color:var(--slate-4);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background=''" title="Settings">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+
+      <button onclick="handleLogout()" style="padding:7px;border-radius:8px;color:var(--red);transition:background .15s;opacity:.7;" onmouseover="this.style.background='rgba(239,68,68,.1)';this.style.opacity='1'" onmouseout="this.style.background='';this.style.opacity='.7'" title="Logout">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══════════════ MAIN ═══════════════ -->
+  <main id="main-content">
+
+    <!-- ════ CANVAS VIEW ════ -->
+    <div id="canvas-view">
+
+      <!-- Sidebar: Tool Registry -->
+      <aside id="sidebar">
+        <div class="sidebar-resize" id="resize-handle"></div>
+
+        <div class="sidebar-inner">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <h2 class="section-label">
+              <svg class="icon" width="12" height="12" viewBox="0 0 24 24" style="color:rgba(255,106,42,.5)"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              Tool Registry
+              <div class="tooltip-wrap" style="margin-left:2px;">
+                <svg class="icon" width="11" height="11" viewBox="0 0 24 24" style="color:var(--slate-6)"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <div class="tooltip">Commands run directly on the host system. Tools must be installed on the machine running this server.</div>
+              </div>
+            </h2>
+            <button id="registry-add-btn" onclick="registryAdd()" title="Add tool" style="padding:4px;border-radius:6px;color:var(--cyan);transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.05)'" onmouseout="this.style.background=''">
+              <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </button>
+          </div>
+
+          <!-- Registry view tabs -->
+          <div class="reg-tabs">
+            <button class="reg-tab active" id="reg-tab-all" onclick="switchRegistryView('all')">All Tools</button>
+            <button class="reg-tab" id="reg-tab-folders" onclick="switchRegistryView('folders')">Folders</button>
+          </div>
+
+          <!-- New folder form -->
+          <div class="add-tool-form hidden" id="add-folder-form">
+            <div class="add-tool-inner">
+              <input type="text" id="new-folder-name" placeholder="Folder name" style="font-size:12px;" onkeydown="if(event.key==='Enter')createFolder()" />
+              <div style="display:flex;gap:8px;">
+                <button class="btn-primary" style="flex:1;font-size:10px;padding:7px;" onclick="createFolder()">Create Folder</button>
+                <button class="btn-ghost" style="flex:1;font-size:10px;padding:7px;" onclick="toggleAddFolder()">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Add tool form -->
+          <div class="add-tool-form hidden" id="add-tool-form">
+            <div class="add-tool-inner">
+              <input type="text" id="new-tool-name" placeholder="Tool Name" style="font-size:12px;" />
+              <input type="text" id="new-tool-desc" placeholder="Description" style="font-size:12px;" />
+              <input type="text" id="new-tool-cmd" placeholder="Raw Command (use $target)" style="font-size:12px;" />
+              <div style="display:flex;gap:8px;">
+                <button class="btn-primary" style="flex:1;font-size:10px;padding:7px;" onclick="addTool()">Register</button>
+                <button class="btn-ghost" style="flex:1;font-size:10px;padding:7px;" onclick="toggleAddTool()">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search -->
+          <div class="search-wrap">
+            <svg class="icon" width="15" height="15" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" id="tool-search" placeholder="Search tools..." style="width:100%;font-size:12px;" oninput="renderTools()" />
+          </div>
+        </div>
+
+        <!-- Tool list -->
+        <div class="sidebar-scroll" id="tools-list"></div>
+      </aside>
+
+      <!-- Center canvas -->
+      <section id="canvas-main">
+        <div class="canvas-top">
+          <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:24px;">
+            <div class="target-input-wrap">
+              <div class="target-label">
+                Target Asset
+                <div class="env-info" id="env-info">
+                  <svg class="icon" width="10" height="10" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                  CWD: <span id="env-cwd" style="color:rgba(255,106,42,.7);">~</span>
+                  &nbsp;|&nbsp; Shell: <span id="env-shell" style="color:rgba(255,106,42,.7);">...</span>
+                </div>
+              </div>
+              <input type="text" id="target-input" placeholder="domain.tld or IP address" class="target-input" oninput="saveTargetDebounced()" />
+            </div>
+            <div class="canvas-stats" style="text-align:right;flex-shrink:0;padding-bottom:4px;">
+              <div class="stat-block"><span>Registry Size</span><div class="stat-num" id="stat-registry">0</div></div>
+              <div class="stat-block" style="border-left:1px solid var(--border);padding-left:16px;"><span>Sequence Units</span><div style="display:flex;align-items:center;gap:4px;justify-content:flex-end;"><div class="stat-num cyan" id="stat-tasks">0</div><div class="stat-num" style="color:var(--slate-8);">/</div><div class="stat-num" style="color:var(--slate-6);">32</div></div></div>
+            </div>
+          </div>
+
+          <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;">
+            <div></div>
+            <div style="display:flex;align-items:center;gap:16px;">
+              <button class="save-pipe-btn" id="save-pipe-toggle" onclick="toggleSavePipe()" disabled>
+                <svg class="icon" width="12" height="12" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Save current as Pipe
+              </button>
+              <button id="clear-btn" class="btn-ghost" onclick="clearPipeline()" style="font-size:10px;padding:7px 12px;color:var(--slate-4);border:1px solid rgba(255,255,255,.1);">
+                <svg class="icon" width="12" height="12" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                Clear
+              </button>
+              <button id="launch-btn" class="btn-primary" onclick="executeWorkflow()" disabled>
+                <svg class="icon" width="14" height="14" viewBox="0 0 24 24" style="fill:currentColor;stroke:none;"><path d="M5 3l14 9-14 9V3z"/></svg>
+                Launch
+              </button>
+            </div>
+          </div>
+
+          <!-- Save pipe form -->
+          <div class="save-pipe-form-wrap" id="save-pipe-form" style="max-height:0;opacity:0;overflow:hidden;transition:max-height .2s,opacity .2s;">
+            <div class="save-pipe-form">
+              <input type="text" id="pipe-name-input" placeholder="Name this workflow pipeline..." style="flex:1;font-size:12px;" />
+              <button class="btn-primary" style="font-size:10px;padding:7px 14px;" onclick="savePipe()">Save Pipe</button>
+              <button class="btn-ghost" style="font-size:10px;padding:7px 14px;" onclick="toggleSavePipe()">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Parallel-group selection bar (shown when tasks are selected) -->
+          <div id="task-select-bar" style="display:none;">
+            <span class="tsb-count"><span id="task-select-count">0 selected</span> — pick 2+ tools to run together</span>
+            <div class="tsb-actions">
+              <button id="tsb-group-btn" class="btn-primary" style="font-size:10px;padding:7px 14px;" onclick="groupSelectedParallel()" disabled>⚡ Group as Parallel</button>
+              <button class="btn-ghost" style="font-size:10px;padding:7px 14px;" onclick="ungroupSelected()">Ungroup</button>
+              <button class="btn-ghost" style="font-size:10px;padding:7px 14px;" onclick="clearSelection()">Clear</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Task list -->
+        <div id="tasks-scroll">
+          <div id="tasks-list" class="tasks-list"></div>
+          <div id="tasks-empty" class="tasks-empty">
+            <div class="tasks-empty-icon">
+              <svg class="icon" width="28" height="28" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+            </div>
+            <h3>Workflow Empty</h3>
+            <p>Select tools from the registry to begin constructing your orchestration pipeline.</p>
+          </div>
+        </div>
+
+        <!-- Terminal -->
+        <div id="terminal-panel">
+          <div class="terminal-topbar">
+            <div class="terminal-label">
+              <svg class="icon" width="12" height="12" viewBox="0 0 24 24" style="color:var(--slate-5)"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+              <span style="font-size:10px;font-weight:700;color:var(--slate-5);text-transform:uppercase;letter-spacing:.15em;">Interactive Terminal</span>
+            </div>
+            <div class="terminal-controls">
+              <div id="running-chip" style="display:none;" class="status-chip" style="border:1px solid rgba(255,106,42,.2);background:rgba(255,106,42,.08);">
+                <svg class="icon spin" width="10" height="10" viewBox="0 0 24 24" style="color:var(--cyan)"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+                <span id="running-count" style="font-size:9px;font-weight:700;color:var(--cyan);text-transform:uppercase;">0 Active</span>
+              </div>
+              <div id="shell-chip" style="display:none;" class="status-chip mono" style="background:rgba(255,255,255,.04);border:1px solid var(--border);">
+                <svg class="icon" width="10" height="10" viewBox="0 0 24 24" style="color:var(--slate-5)"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+                <span id="shell-label" style="font-size:9px;color:var(--slate-5);"></span>
+              </div>
+              <div class="status-chip" style="border:1px solid rgba(239,68,68,.2);background:rgba(239,68,68,.08);">
+                <div class="status-dot pulse" style="background:var(--red);"></div>
+                <span style="font-size:9px;font-weight:700;color:var(--red);text-transform:uppercase;">Admin Mode</span>
+              </div>
+              <button onclick="clearLogs()" style="font-size:9px;color:var(--slate-5);display:flex;align-items:center;gap:4px;transition:color .15s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--slate-5)'">
+                <svg class="icon" width="11" height="11" viewBox="0 0 24 24"><polyline points="3 12 3 19 21 19 21 12"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+                Clear
+              </button>
+            </div>
+          </div>
+          <div class="terminal-body" id="terminal-body">
+            <div id="log-entries"></div>
+            <div id="running-procs"></div>
+            <div id="terminal-input-row" class="terminal-input-row">
+              <span class="tp-seg tp-user" id="terminal-prompt">loading…</span>
+              <span class="tp-seg tp-path" id="terminal-cwd" title="~">~</span>
+              <span class="tp-arrow">❯</span>
+              <form onsubmit="terminalSubmit(event)" style="flex:1;margin-left:2px;">
+                <div class="terminal-input-wrap">
+                  <div id="terminal-ghost" class="terminal-ghost" aria-hidden="true"></div>
+                  <input class="terminal-input" id="terminal-input" placeholder="Enter command..." autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" />
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div><!-- end canvas-view -->
+
+    <!-- ════ EXPLORER VIEW ════ -->
+    <div id="explorer-view" style="display:none;">
+      <!-- Left file browser -->
+      <div class="explorer-sidebar">
+        <div style="margin-bottom:10px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+            <span class="section-label" style="color:var(--cyan);">
+              <svg class="icon" width="13" height="13" viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+              Virtual Machine Drive
+            </span>
+            <button onclick="toggleNewFileForm()" style="font-size:9px;font-weight:700;color:var(--slate-4);padding:3px 8px;background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:5px;transition:all .15s;" onmouseover="this.style.color='var(--cyan)'" onmouseout="this.style.color='var(--slate-4)'">+ New file</button>
+          </div>
+
+          <div class="explorer-path-bar">
+            <span class="explorer-path-label">CWD:</span>
+            <input type="text" id="explorer-path" value="/" onkeydown="if(event.key==='Enter') fetchExplorer(this.value)" />
+            <button class="explorer-up-btn" onclick="explorerUp()">Up</button>
+          </div>
+        </div>
+
+        <!-- New file/dir form -->
+        <div class="new-file-form" id="new-file-form" style="display:none;">
+          <div style="display:flex;gap:12px;margin-bottom:6px;">
+            <label class="radio-label"><input type="radio" name="new-type" value="file" checked /> File</label>
+            <label class="radio-label"><input type="radio" name="new-type" value="directory" /> Folder</label>
+          </div>
+          <div class="row">
+            <input type="text" id="new-file-name" placeholder="Name (e.g. key.pem)" style="flex:1;font-size:10px;padding:5px 8px;" />
+            <button class="btn-primary" style="font-size:9px;padding:5px 12px;" onclick="createHostItem()">Add</button>
+          </div>
+        </div>
+
+        <div class="explorer-list" id="explorer-list">
+          <div style="text-align:center;padding:40px 0;font-size:12px;color:var(--slate-5);">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Right panel: sysinfo + editor -->
+      <div class="explorer-right">
+        <!-- Sysinfo -->
+        <div class="sysinfo-panel">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:36px;height:36px;border-radius:8px;background:rgba(255,106,42,.1);border:1px solid rgba(255,106,42,.2);display:flex;align-items:center;justify-content:center;">
+              <svg class="icon pulse" width="18" height="18" viewBox="0 0 24 24" style="color:var(--cyan)"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div>
+              <div style="font-size:10px;font-weight:700;color:var(--slate-5);text-transform:uppercase;letter-spacing:.12em;line-height:1;">VMware System Telemetry</div>
+              <div style="font-size:13px;font-weight:900;color:var(--cyan);margin-top:4px;display:flex;align-items:center;gap:6px;line-height:1;" id="sys-hostname">Loading... <span class="badge" style="background:rgba(255,106,42,.15);color:var(--cyan);">GUEST VNET</span></div>
+            </div>
+          </div>
+          <div class="sysinfo-stats" id="sysinfo-stats">
+            <div class="sysinfo-stat"><label>Supervisor Host</label><span id="sys-hypervisor">...</span></div>
+            <div class="sysinfo-stat"><label>Memory (Allocated)</label><span id="sys-mem">...</span></div>
+            <div class="sysinfo-stat"><label>Architecture</label><span class="cyan" id="sys-arch">...</span></div>
+            <div class="sysinfo-stat"><label>Operating System</label><span class="emerald" id="sys-os">...</span></div>
+          </div>
+        </div>
+
+        <!-- File viewer / editor -->
+        <div class="editor-panel" id="editor-panel">
+          <div id="editor-placeholder" class="editor-placeholder">
+            <div style="width:64px;height:64px;border:1px solid rgba(255,106,42,.2);border-radius:16px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;animation:pulse 2s infinite;background:rgba(255,106,42,.05);">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,106,42,.7)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <h3>File Viewer</h3>
+            <p style="max-width:300px;text-align:center;">Click any file in the explorer to open it. Supports images, video, audio, PDF, JSON, code (40+ languages), and text files.</p>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:16px;justify-content:center;max-width:360px;">
+              <span class="badge" style="background:rgba(255,106,42,.1);color:var(--cyan);border:1px solid rgba(255,106,42,.2);">Image</span>
+              <span class="badge" style="background:rgba(255,106,42,.1);color:var(--cyan);border:1px solid rgba(255,106,42,.2);">Video</span>
+              <span class="badge" style="background:rgba(255,106,42,.1);color:var(--cyan);border:1px solid rgba(255,106,42,.2);">Audio</span>
+              <span class="badge" style="background:rgba(255,106,42,.1);color:var(--cyan);border:1px solid rgba(255,106,42,.2);">PDF</span>
+              <span class="badge" style="background:rgba(255,106,42,.1);color:var(--cyan);border:1px solid rgba(255,106,42,.2);">JSON</span>
+              <span class="badge" style="background:rgba(255,106,42,.1);color:var(--cyan);border:1px solid rgba(255,106,42,.2);">Code</span>
+              <span class="badge" style="background:rgba(255,106,42,.1);color:var(--cyan);border:1px solid rgba(255,106,42,.2);">Text</span>
+            </div>
+          </div>
+          <div id="editor-content" style="display:none;flex-direction:column;flex:1;overflow:hidden;">
+            <!-- Topbar: filename + navigation + controls -->
+            <div class="editor-topbar">
+
+              <!-- Left: file icon + name + path -->
+              <div style="display:flex;align-items:center;gap:8px;font-size:12px;font-family:'JetBrains Mono',monospace;min-width:0;flex:1;overflow:hidden;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--slate-5)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                <span id="editor-filename" style="color:var(--cyan);font-weight:700;flex-shrink:0;"></span>
+                <span id="editor-filepath" style="color:var(--slate-6);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"></span>
+              </div>
+
+              <!-- Right: nav + save + close -->
+              <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+
+                <!-- Prev / counter / Next -->
+                <button id="file-prev-btn" onclick="openPrevFile()" disabled
+                  title="Previous file"
+                  style="display:inline-flex;align-items:center;gap:4px;
+                         font-size:10px;font-weight:700;padding:5px 10px;
+                         border-radius:7px;border:1px solid var(--border);
+                         background:rgba(255,255,255,.04);color:var(--slate-4);
+                         transition:background .15s,color .15s;cursor:pointer;"
+                  onmouseover="if(!this.disabled)this.style.color='#fff'"
+                  onmouseout="this.style.color=''">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+                  Prev
+                </button>
+
+                <span id="file-nav-counter"
+                  style="font-size:9px;font-weight:700;color:var(--slate-6);
+                         min-width:40px;text-align:center;font-family:'JetBrains Mono',monospace;
+                         letter-spacing:.04em;">—</span>
+
+                <button id="file-next-btn" onclick="openNextFile()" disabled
+                  title="Next file"
+                  style="display:inline-flex;align-items:center;gap:4px;
+                         font-size:10px;font-weight:700;padding:5px 10px;
+                         border-radius:7px;border:1px solid var(--border);
+                         background:rgba(255,255,255,.04);color:var(--slate-4);
+                         transition:background .15s,color .15s;cursor:pointer;"
+                  onmouseover="if(!this.disabled)this.style.color='#fff'"
+                  onmouseout="this.style.color=''">
+                  Next
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+                </button>
+
+                <div style="width:1px;height:16px;background:var(--border);margin:0 2px;"></div>
+
+                <span id="save-status" style="font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;"></span>
+                <button id="editor-save-btn" class="btn-primary"
+                  style="display:none;font-size:10px;padding:5px 12px;display:none;align-items:center;gap:5px;"
+                  onclick="saveFile()">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                  Save
+                </button>
+                <button class="btn-ghost" style="font-size:10px;padding:5px 12px;" onclick="closeEditor()">Close</button>
+              </div>
+            </div>
+            <!-- Dynamic viewer body — all viewers inject here -->
+            <div id="viewer-body" style="flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;"></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- end explorer-view -->
+
+  </main>
+</div><!-- end app -->
+
+<!-- ═══════════════ OUTPUT MODAL ═══════════════ -->
+<div id="output-modal" class="modal-backdrop hidden">
+  <div class="modal-box" style="width:860px;max-width:95vw;">
+    <div class="modal-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:rgba(255,106,42,.1);display:flex;align-items:center;justify-content:center;">
+          <svg class="icon" width="15" height="15" viewBox="0 0 24 24" style="color:var(--cyan)"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        </div>
+        <div>
+          <div id="output-tool-name" style="font-size:13px;font-weight:700;color:var(--cyan);"></div>
+          <div id="output-command" style="font-size:10px;color:var(--slate-5);font-family:'JetBrains Mono',monospace;"></div>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeOutputModal()">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div style="flex:1;overflow:auto;padding:20px;background:var(--bg3);max-height:60vh;">
+      <pre id="output-content" style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--slate-3);white-space:pre-wrap;line-height:1.7;"></pre>
+    </div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <div class="output-exit mono" id="output-exit" style="font-size:10px;color:var(--slate-6);"></div>
+      <div class="output-actions">
+        <button id="copy-btn" class="btn-ghost" style="font-size:11px;" onclick="copyOutput()">
+          <svg class="icon" width="13" height="13" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+        <button class="btn-ghost" style="font-size:11px;" onclick="downloadOutput()">
+          <svg class="icon" width="13" height="13" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </button>
+        <button class="btn-primary" style="font-size:11px;" onclick="closeOutputModal()">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ PIPE LIBRARY MODAL ═══════════════ -->
+<div id="pipe-modal" class="modal-backdrop hidden">
+  <div class="modal-box" style="width:900px;max-width:96vw;height:72vh;">
+    <div class="modal-header" style="position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-40%;left:-10%;width:120%;height:120%;background:radial-gradient(circle at 50% 0%,rgba(255,106,42,.10),transparent 60%);pointer-events:none;"></div>
+      <div style="display:flex;align-items:center;gap:12px;position:relative;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--cyan);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(255,106,42,.32);">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" style="color:#000;stroke:#000"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        </div>
+        <div>
+          <h3 style="font-size:16px;font-weight:800;color:#fff;letter-spacing:-.02em;">Pipe Library</h3>
+          <p style="font-size:10px;color:var(--slate-5);">Saved workflow pipelines — click one to load it</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closePipeModal()">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="pipe-list"></div>
+    <div class="modal-footer" style="justify-content:space-between;">
+      <span style="font-size:10px;color:var(--slate-5);display:flex;align-items:center;gap:6px;">
+        <svg class="icon" width="11" height="11" viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        Applying a pipe replaces the current Active Pipeline
+      </span>
+      <button class="btn-ghost" style="font-size:12px;" onclick="closePipeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ SYSTEM STATUS MODAL ═══════════════ -->
+<div id="status-modal" class="modal-backdrop hidden">
+  <div class="modal-box" style="width:820px;max-width:95vw;height:80vh;">
+    <div class="modal-header" style="position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-40%;left:-10%;width:120%;height:120%;background:radial-gradient(circle at 50% 0%,rgba(255,106,42,.10),transparent 60%);pointer-events:none;"></div>
+      <div style="display:flex;align-items:center;gap:12px;position:relative;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--cyan);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(255,106,42,.32);">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" style="color:#000;stroke:#000"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <div>
+          <h2 style="font-size:16px;font-weight:800;color:#fff;letter-spacing:-.02em;">System Status</h2>
+          <p style="font-size:10px;color:var(--slate-5);" id="status-sub">Live process &amp; pipeline monitor</p>
+        </div>
+      </div>
+      <button class="modal-close" onclick="closeStatusModal()">
+        <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" id="status-body"></div>
+    <div class="mission-footer-bar">
+      <span style="font-size:10px;color:var(--slate-5);display:flex;align-items:center;gap:6px;">
+        <span class="status-dot pulse" style="background:var(--cyan);"></span>
+        Auto-refreshing every second
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ MISSION CONTROL MODAL ═══════════════ -->
+<div id="mission-modal" class="modal-backdrop hidden">
+  <div class="modal-box" style="width:1120px;max-width:96vw;height:88vh;">
+    <div class="modal-header" style="position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-40%;left:-10%;width:120%;height:120%;background:radial-gradient(circle at 50% 0%,rgba(255,106,42,.10),transparent 60%);pointer-events:none;"></div>
+      <div style="display:flex;align-items:center;gap:12px;position:relative;">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--cyan);display:flex;align-items:center;justify-content:center;box-shadow:0 0 16px rgba(255,106,42,.32);">
+          <svg class="icon" width="18" height="18" viewBox="0 0 24 24" style="color:#000;stroke:#000"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg>
+        </div>
+        <div>
+          <h2 style="font-size:16px;font-weight:800;color:#fff;letter-spacing:-.02em;">CSHUNTER Strategist</h2>
+          <p style="font-size:10px;color:var(--slate-5);">Sequence orchestration &amp; step ordering</p>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:14px;position:relative;">
+        <span class="status-chip" style="border:1px solid rgba(255,106,42,.3);background:rgba(255,106,42,.08);color:var(--cyan);font-family:'JetBrains Mono',monospace;font-weight:800;" id="mission-count">0 Steps</span>
+        <button class="modal-close" onclick="closeMissionModal()">
+          <svg class="icon" width="16" height="16" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <div class="modal-body" id="mission-list" style="display:flex;flex-direction:column;"></div>
+    <div class="mission-footer-bar">
+      <span style="font-size:10px;color:var(--slate-5);display:flex;align-items:center;gap:6px;">
+        <svg class="icon" width="11" height="11" viewBox="0 0 24 24"><polyline points="5 9 2 12 5 15"/><polyline points="9 5 12 2 15 5"/><polyline points="15 19 12 22 9 19"/><polyline points="19 9 22 12 19 15"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/></svg>
+        Drag steps to reorder — changes save automatically
+      </span>
+    </div>
+  </div>
+</div>
+
+  <script src="/static/js/state.js?v=csh16"></script>
+  <script src="/static/js/api.js?v=csh16"></script>
+  <script src="/static/js/ui/tools.js?v=csh16"></script>
+  <script src="/static/js/ui/tasks.js?v=csh16"></script>
+  <script src="/static/js/ui/workflow.js?v=csh16"></script>
+  <script src="/static/js/ui/pipes.js?v=csh16"></script>
+  <script src="/static/js/ui/mission.js?v=csh16"></script>
+  <script src="/static/js/ui/output.js?v=csh16"></script>
+  <script src="/static/js/ui/status.js?v=csh16"></script>
+  <script src="/static/js/ui/terminal.js?v=csh16"></script>
+  <script src="/static/js/ui/environment.js?v=csh16"></script>
+  <script src="/static/js/ui/explorer.js?v=csh16"></script>
+  <script src="/static/js/ui/auth.js?v=csh16"></script>
+  <script src="/static/js/app.js?v=csh16"></script>
+</body>
+</html>

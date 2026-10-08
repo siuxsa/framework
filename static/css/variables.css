@@ -1,0 +1,65 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ═══════════════════════════════════════════════════════════════════
+   CSHUNTER — Palette
+   #1A1C1F  base surface
+   #3A3F45  elevated slate / dividers
+   #6E7781  muted grey text
+   #FF6A2A  primary accent (orange)
+   #F2F2F0  primary text (off-white)
+   ═══════════════════════════════════════════════════════════════════ */
+:root {
+  /* Base surfaces */
+  --bg:        #1a1c1f;
+  --bg2:       #212429;
+  --bg3:       #141518;
+
+  /* Primary accent — kept named --cyan so existing var(--cyan) refs cascade */
+  --cyan:      #ff6a2a;
+  --cyan-dim:  rgba(255,106,42,.15);
+  --accent:    #ff6a2a;
+  --accent-hi: #ff8551;
+
+  /* Semantic status colours */
+  --emerald:   #ff6a2a;
+  --red:       #ef4444;
+  --amber:     #f59e0b;
+
+  /* Neutral ramp (settles on #6E7781 / #3A3F45 from the palette) */
+  --slate-3:   #e6e7e5;
+  --slate-4:   #b4b8bd;
+  --slate-5:   #6e7781;
+  --slate-6:   #565b62;
+  --slate-7:   #3a3f45;
+  --slate-8:   #2a2e33;
+
+  --border:    rgba(255,255,255,.06);
+  --border2:   rgba(255,255,255,.1);
+
+  --text:      #f2f2f0;
+}
+
+html, body { height: 100%; overflow: hidden; }
+
+/* Render the console at 80% scale by default (mimics browser zoom 80%)
+   so more of the pipeline and registry fit on screen.
+   zoom also shrinks vh/%, so the root height is divided by the zoom
+   factor to keep the app filling the full physical viewport. */
+html { zoom: 0.8; height: calc(100vh / 0.8); }
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar         { width: 6px; height: 6px; }
+::-webkit-scrollbar-track   { background: transparent; }
+::-webkit-scrollbar-thumb   { background: rgba(255,255,255,.08); border-radius: 10px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,106,42,.35); }
+
+/* SVG Icons */
+svg.icon { display: inline-block; vertical-align: middle; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
