@@ -57,7 +57,7 @@ Dark-slate palette with an orange accent:
 
 ### Default credentials
 
-Fresh installs seed the login with `cshunter` / `cshunter`. Change them from **Settings** after first login. (Existing databases keep whatever credentials were already set.)
+Fresh installs seed the login with `siuxsa` / `siuxsa`. Change them from **Settings** after first login. (Existing databases keep whatever credentials were already set.)
 
 ## 🎮 How to Use
 
